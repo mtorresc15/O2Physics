@@ -18,6 +18,7 @@
 
 #include "PWGHF/Core/HfMlResponseOmegacToOmegaPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
@@ -728,14 +729,16 @@ struct HfCandidateSelectorToOmegaPiQa {
       }
 
       // ML selections
-      if (applyMl) {
-        bool isSelectedMlOmegac = false;
-        std::vector<float> inputFeaturesOmegaC = hfMlResponse.getInputFeatures(candidate, trackPiFromLam, trackKaFromCasc, trackPiFromCharm);
-        isSelectedMlOmegac = hfMlResponse.isSelectedMl(inputFeaturesOmegaC, ptCandOmegac, outputMlOmegac);
-        if (!isSelectedMlOmegac) {
-          continue;
+      if constexpr (dokf) {
+        if (applyMl) {
+          bool isSelectedMlOmegac = false;
+          std::vector<float> inputFeaturesOmegaC = hfMlResponse.getInputFeatures(candidate, trackPiFromLam, trackKaFromCasc, trackPiFromCharm);
+          isSelectedMlOmegac = hfMlResponse.isSelectedMl(inputFeaturesOmegaC, ptCandOmegac, outputMlOmegac);
+          if (!isSelectedMlOmegac) {
+            continue;
+          }
+          hfMlSelToOmegaPi(outputMlOmegac);
         }
-        hfMlSelToOmegaPi(outputMlOmegac);
       }
 
       hfSelToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
