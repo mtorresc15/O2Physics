@@ -110,8 +110,15 @@ struct HfCandidateSelectorToOmegaPiQa {
   // Mass window
   Configurable<double> v0MassWindow{"v0MassWindow", 0.01, "V0 mass window"};
   Configurable<double> cascadeMassWindow{"cascadeMassWindow", 0.01, "Cascade mass window"};
+  
+  // Competing cascade rejection for KFParticle candidates
+  Configurable<bool> applyCompetingCascRejection{"applyCompetingCascRejection", false, "Apply competing Xi rejection for Omegac0 KFParticle candidates"};
+  Configurable<float> cascadeRejMassWindow{"cascadeRejMassWindow", 0.01, "Competing Xi rejection mass window"};
+
   Configurable<double> invMassCharmBaryonMin{"invMassCharmBaryonMin", 2.3, "Lower limit invariant mass spectrum charm baryon"}; // 2.4 Omegac0 only
   Configurable<double> invMassCharmBaryonMax{"invMassCharmBaryonMax", 3.1, "Upper limit invariant mass spectrum charm baryon"};
+  
+  Configurable<float> omegacLdlMax{"omegacLdlMax", 5., "Maximum value of l/dl of Omegac"};
 
   // Configurable<double> cosPAV0Min{"cosPAV0Min", 0.97, "Min valueCosPA V0"};
   // Configurable<double> cosPACascMin{"cosPACascMin", 0.97, "Min value CosPA cascade"};
@@ -155,7 +162,7 @@ struct HfCandidateSelectorToOmegaPiQa {
   Configurable<double> ptKaPidTofMin{"ptKaPidTofMin", -1, "Lower bound of track pT for TOF PID for kaon selection"};
   Configurable<double> ptKaPidTofMax{"ptKaPidTofMax", 9999.9, "Upper bound of track pT for TOF PID for kaon selection"};
   Configurable<double> nSigmaTofKaMax{"nSigmaTofKaMax", 3., "Nsigma cut on TOF only for kaon selection"};
-  Configurable<double> nSigmaTofCombinedKaMax{"nSigmaTofCombinedKaMax", 0., "Nsigma cut on TOF combined with TOF for kaon selection"};
+  Configurable<double> nSigmaTofCombinedKaMax{"nSigmaTofCombinedKaMax", 0., "Nsigma cut on TOF combined with TPC for kaon selection"};
 
   // detector clusters selections
   Configurable<int> nClustersTpcMin{"nClustersTpcMin", 70, "Minimum number of TPC clusters requirement"};
@@ -211,7 +218,7 @@ struct HfCandidateSelectorToOmegaPiQa {
   // } kfConfigurableGroup;
 
   void init(InitContext const&)
-  // {
+  {
   //   std::array<bool, 2> processesSelector = {doprocessOmegac0SelectorWithDCAFitter, doprocessOmegac0SelectorWithKFParticle};
   //   const int nProcessesSelector = std::accumulate(processesSelector.begin(), processesSelector.end(), 0);
   //   if (nProcessesSelector != 1) {
@@ -243,7 +250,7 @@ struct HfCandidateSelectorToOmegaPiQa {
     const AxisSpec axisSelOnLfDca{14, -0.5, 13.5, "status"};
     const AxisSpec axisSelOnLfKf{23, -0.5, 22.5, "status"};
     const AxisSpec axisSelOnHfDca{6, -0.5, 5.5, "status"};
-    const AxisSpec axisSelOnHfKf{12, -0.5, 11.5, "status"};
+    const AxisSpec axisSelOnHfKf{13, -0.5, 12.5, "status"};
 
     // registry.add("hSelPID", "hSelPID;status;entries", {HistType::kTH1D, {{12, 0., 12.}}});
     // registry.add("hStatusCheck", "Check consecutive selections status;status;entries", {HistType::kTH1D, {{12, 0., 12.}}});
@@ -293,7 +300,7 @@ struct HfCandidateSelectorToOmegaPiQa {
     registry.get<TH1>(HIST("hSelStatusPID"))->GetXaxis()->SetBinLabel(4, "CharmBaryon");
 
     // For QA of LF & HF selection
-    if (doprocessSelectionDCAFitter) {
+    if (doprocessOmegac0SelectorWithDCAFitter) {
       registry.add("hSelStatusLf", "hSelStatusLf;# of candidate passed;", {HistType::kTH1F, {axisSelOnLfDca}});
       registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(1, "All");
       registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(2, "etaV0Dau");
@@ -319,7 +326,7 @@ struct HfCandidateSelectorToOmegaPiQa {
       registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(6, "impactParBachFromCharmZ");
     }
 
-    if (doprocessSelectionKFParticle) {
+    if (doprocessOmegac0SelectorWithKFParticle) {
       registry.add("hSelStatusLf", "hSelStatusLf;# of candidate passed;", {HistType::kTH1F, {axisSelOnLfKf}});
       registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(1, "All");
       registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(2, "etaV0Dau");
@@ -333,7 +340,7 @@ struct HfCandidateSelectorToOmegaPiQa {
       registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(10, "dcaXYToPvV0Dau1");
       registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(11, "dcaXYToPvCascDau");
       registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(12, "ptKaFromCasc");
-      registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(13, "cosPAV0ToCasc");
+      registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(13, "cosPaV0ToCasc");
       registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(14, "kfDcaXYCascToPv");
       registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(15, "chi2GeoV0");
       registry.get<TH1>(HIST("hSelStatusLf"))->GetXaxis()->SetBinLabel(16, "chi2GeoCasc");
@@ -358,12 +365,19 @@ struct HfCandidateSelectorToOmegaPiQa {
       registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(10, "chi2TopoCascToOmegac");
       registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(11, "decayLenXYOmegac");
       registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(12, "cTauOmegac");
+      registry.get<TH1>(HIST("hSelStatusHf"))->GetXaxis()->SetBinLabel(13, "omegacldl");
     }
 
     // invariant mass histograms
-    registry.add("hInvMassCharmBaryonWoPidInvMassCut", "Charm baryon invariant mass; int mass; entries", {HistType::kTH1F, {{500, 2.3, 3.1}}});
-    registry.add("hInvMassCharmBaryon", "Charm baryon invariant mass; int mass; entries", {HistType::kTH1F, {{500, 2.3, 3.1}}});
-    registry.add("hInvMassCharmBaryonBkg", "Charm baryon invariant mass, rejected; int mass; entries", {HistType::kTH1F, {{500, 2.3, 3.1}}});
+    registry.add("hInvMassCharmBaryonWoPidInvMassCut", "Charm baryon invariant mass; inv. mass; entries", {HistType::kTH1F, {{500, 2.3, 3.1}}});
+    registry.add("hInvMassCharmBaryon", "Charm baryon invariant mass; inv. mass; entries", {HistType::kTH1F, {{500, 2.3, 3.1}}});
+    registry.add("hInvMassCharmBaryonBkg", "Charm baryon invariant mass, rejected; inv. mass; entries", {HistType::kTH1F, {{500, 2.3, 3.1}}});
+    
+    if (doprocessOmegac0SelectorWithKFParticle) {
+      registry.add("hSelCompetingCasc", "hSelCompetingCasc;status;entries", {HistType::kTH1F, {axisSel}});
+      registry.add("hInvMassXiMinus_rej_cut", "hInvMassXiMinus_rej_cut;m_{#Lambda#pi} under Xi hypothesis (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{1000, 1.25f, 1.65f}}});
+    }
+
     // registry.add("hPtCharmBaryon", "Charm baryon transverse momentum; p_{T} (GeV/c); entries", {HistType::kTH1D, {{8000, 0., 80.}}});
 
     // if (kfConfigurableGroup.applyKFpreselections) {
@@ -392,7 +406,7 @@ struct HfCandidateSelectorToOmegaPiQa {
 
     // HfMlResponse initialization
     if (applyMl) {
-      if (doprocessSelectionDCAFitter) { 
+      if (doprocessOmegac0SelectorWithDCAFitter) { 
         hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
         if (loadModelsFromCCDB) {
           ccdbApi.init(ccdbUrl);
@@ -542,11 +556,11 @@ struct HfCandidateSelectorToOmegaPiQa {
 
     } else {
       // Impact parameter(DCA?)
-      if (std::abs(candidate.impactParCascXY()) < impactParXYCascMin || std::abs(candidate.impactParCascXY()) > impactParXYCascMax) {
+      if (std::abs(candidate.impactParCascXY()) < impactParameterXYCascMin || std::abs(candidate.impactParCascXY()) > impactParameterXYCascMax) {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 12.0);
-      if (std::abs(candidate.impactParCascZ()) < impactParZCascMin || std::abs(candidate.impactParCascZ()) > impactParZCascMax) {
+      if (std::abs(candidate.impactParCascZ()) < impactParameterZCascMin || std::abs(candidate.impactParCascZ()) > impactParameterZCascMax) {
         return false;
       }
       registry.fill(HIST("hSelStatusLf"), 13.0);
@@ -626,13 +640,19 @@ struct HfCandidateSelectorToOmegaPiQa {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 11.0);
+
+      // Omegac l/dl
+      if (candidate.omegacldl() > omegacLdlMax) {
+        return false;
+      }
+      registry.fill(HIST("hSelStatusHf"), 12.0);
     } else {
       // Impact parameter(DCA?)
-      if ((std::abs(candidate.impactParBachFromCharmBaryonXY()) < impactParXYPiFromCharmBaryonMin) || (std::abs(candidate.impactParBachFromCharmBaryonXY()) > impactParXYPiFromCharmBaryonMax)) {
+      if ((std::abs(candidate.impactParBachFromCharmBaryonXY()) < impactParameterXYPiFromCharmBaryonMin) || (std::abs(candidate.impactParBachFromCharmBaryonXY()) > impactParameterXYPiFromCharmBaryonMax)) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 4.0);
-      if ((std::abs(candidate.impactParBachFromCharmBaryonZ()) < impactParZPiFromCharmBaryonMin) || (std::abs(candidate.impactParBachFromCharmBaryonZ()) > impactParZPiFromCharmBaryonMax)) {
+      if ((std::abs(candidate.impactParBachFromCharmBaryonZ()) < impactParameterZPiFromCharmBaryonMin) || (std::abs(candidate.impactParBachFromCharmBaryonZ()) > impactParameterZPiFromCharmBaryonMax)) {
         return false;
       }
       registry.fill(HIST("hSelStatusHf"), 5.0);
@@ -701,6 +721,21 @@ struct HfCandidateSelectorToOmegaPiQa {
         resultSelections = false;
       }
 
+      // Competing Xi rejection (KF) Try to reject cases in which the candidate has a an inv. mass compatible with Xi (bachelor pion) instead of Omega (bachelor kaon)
+      if constexpr (svReco == doKfParticle) {
+        if (resultSelections && applyCompetingCascRejection) {
+          const auto invMassXiHypothesis = candidate.cascRejectInvmass();
+
+          if (std::abs(invMassXiHypothesis - o2::constants::physics::MassXiMinus) < cascadeRejMassWindow) {
+            resultSelections = false;
+            registry.fill(HIST("hSelCompetingCasc"), 0.0);
+          } else {
+            registry.fill(HIST("hSelCompetingCasc"), 1.0);
+            registry.fill(HIST("hInvMassXiMinus_rej_cut"), invMassXiHypothesis);
+          }
+        }
+      }
+      
       // if (std::abs(etaV0PosDau) > etaTrackLFDauMax) {
       //   resultSelections = false;
       //   registry.fill(HIST("hSelEtaPosV0Dau"), 0);
@@ -1100,7 +1135,7 @@ struct HfCandidateSelectorToOmegaPiQa {
       if (std::abs(invMassLambda - o2::constants::physics::MassLambda0) < v0MassWindow) {
         statusInvMassLambda = true;
       }
-      if (std::abs(invMassCascade - o2::constants::physics::MassOmegaMinus) < cascMassWindow) {
+      if (std::abs(invMassCascade - o2::constants::physics::MassOmegaMinus) < cascadeMassWindow) {
         statusInvMassCascade = true;
       }
       if ((invMassCharmBaryon >= invMassCharmBaryonMin) && (invMassCharmBaryon <= invMassCharmBaryonMax)) {
@@ -1133,17 +1168,12 @@ struct HfCandidateSelectorToOmegaPiQa {
         }
       }
 
-      // hfSelToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
-      //                trackPiFromCharm.tpcNSigmaPi(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
-      //                trackPiFromCharm.tofNSigmaPi(), trackKaFromCasc.tofNSigmaKa(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
-      
       // Fill in selection result
       if (!statusPidLambda || !statusPidCascade || !statusPidCharmBaryon ||
           !statusInvMassLambda || !statusInvMassCascade || !statusInvMassCharmBaryon) {
       resultSelections = false;
       }
-      hfSelToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections,
-                     infoTpcStored, infoTofStored,
+      hfSelToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
                      trackPiFromCharm.tpcNSigmaPi(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
                      trackPiFromCharm.tofNSigmaPi(), trackKaFromCasc.tofNSigmaKa(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
 
