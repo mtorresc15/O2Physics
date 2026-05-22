@@ -114,7 +114,7 @@ o2::track::PID::ID getTrackPIDFromPDG(const int pdg)
       return o2::track::PID::OmegaMinus;
     default:
       LOGF(fatal, "Unsupported PDG code %d in getTrackPIDFromPDG()", pdg);
-      return o2::track::PID::Pion; 
+      return o2::track::PID::Pion;
   }
 }
 
