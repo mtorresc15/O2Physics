@@ -71,7 +71,7 @@ enum {
 struct HfCandidateSelectorToOmegaPiQa {
   // DCAFitter and KFParticle 
   Produces<aod::HfSelToOmegaPi> hfSelToOmegaPi;
-  // ML selection - Filled with both DCAFitter and KFParticle
+  // ML selection - currently filled only for KFParticle
   Produces<aod::HfMlSelOmegacToOmegaPi> hfMlSelToOmegaPi;
 
   // cuts from SelectorCuts.h  - pT dependent cuts
@@ -390,7 +390,8 @@ struct HfCandidateSelectorToOmegaPiQa {
 
     // HfMlResponse initialization
     if (applyMl) {
-      if (doprocessOmegac0SelectorWithDCAFitter) { 
+      if (doprocessOmegac0SelectorWithKFParticle) {
+        registry.add("hBDTScoreTest1", "hBDTScoreTest1", {HistType::kTH1D, {{100, 0.0f, 1.0f, "score"}}});
         hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
         if (loadModelsFromCCDB) {
           ccdbApi.init(ccdbUrl);
@@ -401,8 +402,8 @@ struct HfCandidateSelectorToOmegaPiQa {
         hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
         hfMlResponse.init();
       } else { 
-        // KFParticle path: ML is not yet implemented
-        LOGP(warning, "ML selection is currently only supported for DCAFitter.");
+        // DCAFitter: ML is not yet implemented
+        LOGP(warning, "ML selection is currently only supported for KFParticle.");
       }
     }
   }
@@ -411,7 +412,7 @@ struct HfCandidateSelectorToOmegaPiQa {
   // Selection on LF related informations
   // returns true if all cuts are passed
   template <int svReco, typename T>
-  bool SelectOnLF(const T& candidate, const int& inputPtBin)
+  bool selectOnLf(const T& candidate, const int& inputPtBin)
   {
 
     registry.fill(HIST("hSelStatusLf"), 0.0);
@@ -572,7 +573,7 @@ struct HfCandidateSelectorToOmegaPiQa {
   // Apply cuts with charm baryon & charm bachelor related informations
   // returns true if all cuts are passed
   template <int svReco, typename T>
-  bool SelectOnHF(const T& candidate, const int& inputPtBin)
+  bool selectOnHf(const T& candidate, const int& inputPtBin)
   {
     registry.fill(HIST("hSelStatusHf"), 0.0);
 
@@ -692,13 +693,11 @@ struct HfCandidateSelectorToOmegaPiQa {
       
       if (ptCandOmegac <= ptCandMin || ptCandOmegac >= ptCandMax) {
         resultSelections = false;
-        continue;
       }
 
       int pTBin = findBin(binsPt, ptCandOmegac);
       if (pTBin == -1) {
         resultSelections = false;
-        continue;
       }
 
       // // check that the candidate pT is within the analysis range
@@ -711,8 +710,8 @@ struct HfCandidateSelectorToOmegaPiQa {
       // }
 
       // Topological selection
-      const bool selectionResOnLF = SelectOnLF<svReco>(candidate, pTBin);
-      const bool selectionResOnHF = SelectOnHF<svReco>(candidate, pTBin);
+      const bool selectionResOnLF = selectOnLf<svReco>(candidate, pTBin);
+      const bool selectionResOnHF = selectOnHf<svReco>(candidate, pTBin);
       if (!selectionResOnLF || !selectionResOnHF) {
         resultSelections = false;
       }
@@ -1123,27 +1122,25 @@ struct HfCandidateSelectorToOmegaPiQa {
         statusInvMassCharmBaryon = true;
       }
 
-      // ML BDT selection
-      if (applyMl) {
-        bool isSelectedMlOmegac = false;
-        std::vector<float> inputFeaturesOmegaC = {};
-        if constexpr (svReco == doKfParticle) {
-          inputFeaturesOmegaC = hfMlResponse.getInputFeatures(candidate, trackPiFromLam, trackKaFromCasc, trackPiFromCharm);
+      // ML BDT selection  - curently only for KFParticle 
+      if constexpr (svReco == doKfParticle) {
+        if (applyMl) {
+          bool isSelectedMlOmegac = false;
+          std::vector<float> inputFeaturesOmegaC = hfMlResponse.getInputFeatures(candidate, trackPiFromLam, trackKaFromCasc, trackPiFromCharm);
           isSelectedMlOmegac = hfMlResponse.isSelectedMl(inputFeaturesOmegaC, ptCandOmegac, outputMlOmegac);
-        
-          if (!isSelectedMlOmegac) {
-            continue;
+          if (isSelectedMlOmegac) {
+            registry.fill(HIST("hBDTScoreTest1"), outputMlOmegac[0]);
+          } else {
+            resultSelections = false;
           }
           hfMlSelToOmegaPi(outputMlOmegac);
-        } else {
-          // DCAFitter path: skip ML application
         }
       }
 
       // Fill in selection result
       if (!statusPidLambda || !statusPidCascade || !statusPidCharmBaryon ||
           !statusInvMassLambda || !statusInvMassCascade || !statusInvMassCharmBaryon) {
-      resultSelections = false;
+        resultSelections = false;
       }
       hfSelToOmegaPi(statusPidLambda, statusPidCascade, statusPidCharmBaryon, statusInvMassLambda, statusInvMassCascade, statusInvMassCharmBaryon, resultSelections, infoTpcStored, infoTofStored,
                      trackPiFromCharm.tpcNSigmaPi(), trackKaFromCasc.tpcNSigmaKa(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
