@@ -79,7 +79,7 @@ enum class InputFeaturesOmegacToOmegaPi : uint8_t {
   cosPACharmBaryon,
   cosPACasc,
   
-  // KFPartcile variables
+  // KFParticle variables
   cosPaOmegacToPv,
   kfDcaXYPiFromOmegac,
   chi2TopoPiFromOmegacToPv,
@@ -100,7 +100,7 @@ enum class InputFeaturesOmegacToOmegaPi : uint8_t {
   chi2GeoCasc,
 };
 
-template <typename TypeOutputScore = float, hf_cand_casc_lf::ConstructMethod reconstructionType = hf_cand_casc_lf::ConstructMethod::DcaFitter>
+template <typename TypeOutputScore = float, aod::hf_cand_casc_lf::ConstructMethod reconstructionType = aod::hf_cand_casc_lf::ConstructMethod::DcaFitter>
 class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
 {
  public:
@@ -132,7 +132,7 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
       }
       
       // DCAFitter variables
-      if constexpr (reconstructionType == hf_cand_casc_lf::ConstructMethod::DcaFitter) {
+      if constexpr (reconstructionType == aod::hf_cand_casc_lf::ConstructMethod::DcaFitter) {
 
         switch (idx) {
 
@@ -146,7 +146,7 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
       }
         
       // KFParticle variables
-      if constexpr (reconstructionType == hf_cand_casc_lf::ConstructMethod::KfParticle) {
+      if constexpr (reconstructionType == aod::hf_cand_casc_lf::ConstructMethod::KfParticle) {
 
         switch (idx) {
 
@@ -190,7 +190,7 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
     };
 
     // DCAFitter variables
-    if constexpr (reconstructionType == hf_cand_casc_lf::ConstructMethod::DcaFitter) {
+    if constexpr (reconstructionType == aod::hf_cand_casc_lf::ConstructMethod::DcaFitter) {
 
       std::map<std::string, uint8_t> mapDcaFeatures{
 
@@ -205,8 +205,8 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
       MlResponse<TypeOutputScore>::mAvailableInputFeatures.insert(mapDcaFeatures.begin(), mapDcaFeatures.end());
     }
 
-    // KFPartcile variables
-    if constexpr (reconstructionType == hf_cand_casc_lf::ConstructMethod::KfParticle) {
+    // KFParticle variables
+    if constexpr (reconstructionType == aod::hf_cand_casc_lf::ConstructMethod::KfParticle) {
 
       std::map<std::string, uint8_t> mapKfFeatures{
 
