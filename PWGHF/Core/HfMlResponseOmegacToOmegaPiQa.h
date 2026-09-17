@@ -52,14 +52,6 @@
     inputFeatures.emplace_back(candidate.GETTER());                  \
     break;                                                           \
   }
-
-// Variation of CHECK_AND_FILL_VEC_OMEGAC0_FULL(OBJECT, FEATURE, GETTER)
-// where GETTER is a method of HfHelper
-#define CHECK_AND_FILL_VEC_OMEGAC0_HFHELPER(OBJECT, FEATURE, GETTER)  \
-  case static_cast<uint8_t>(InputFeaturesOmegacToOmegaPi::FEATURE): { \
-    inputFeatures.emplace_back(HfHelper::GETTER(OBJECT));             \
-    break;                                                            \
-  }
 namespace o2::analysis
 {
 enum class InputFeaturesOmegacToOmegaPi : uint8_t {
@@ -240,5 +232,4 @@ class HfMlResponseOmegacToOmegaPi : public HfMlResponse<TypeOutputScore>
 #undef FILL_MAP_OMEGAC0
 #undef CHECK_AND_FILL_VEC_OMEGAC0_FULL
 #undef CHECK_AND_FILL_VEC_OMEGAC0
-#undef CHECK_AND_FILL_VEC_OMEGAC0_HFHELPER
 #endif // PWGHF_CORE_HFMLRESPONSEOMEGACTOOMEGAPIQA_H_

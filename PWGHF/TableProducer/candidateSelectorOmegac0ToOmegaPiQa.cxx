@@ -15,7 +15,7 @@
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, University of Houston
 /// \author Maria Fernanda Torres Cabrera <maria.fernanda.torres.cabrera@cern.ch>, University of Houston
 
-#include "PWGHF/Core/HfMlResponseOmegacToOmegaPi.h"
+#include "PWGHF/Core/HfMlResponseOmegacToOmegaPiQa.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/AliasTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -71,7 +71,7 @@ enum {
 struct HfCandidateSelectorToOmegaPiQa {
   // DCAFitter and KFParticle 
   Produces<aod::HfSelToOmegaPi> hfSelToOmegaPi;
-  // ML selection - currently filled only for KFParticle
+  // ML selection - filled for both DCAFitter and KFParticle
   Produces<aod::HfMlSelOmegacToOmegaPi> hfMlSelToOmegaPi;
 
   // cuts from SelectorCuts.h  - pT dependent cuts
@@ -176,7 +176,9 @@ struct HfCandidateSelectorToOmegaPiQa {
   Configurable<int> nClustersItsInnBarrMin{"nClustersItsInnBarrMin", 1, "Minimum number of ITS clusters in inner barrel requirement for pi <- charm baryon"};
   Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 36, "Maximum value of chi2 fit over ITS clusters for pi <- charm baryon"};
 
-  o2::analysis::HfMlResponseOmegacToOmegaPi<float> hfMlResponse;
+  // o2::analysis::HfMlResponseOmegacToOmegaPi<float> hfMlResponse;
+  o2::analysis::HfMlResponseOmegacToOmegaPi<float, aod::hf_cand_casc_lf::ConstructMethod::DcaFitter> hfMlResponseDca;
+  o2::analysis::HfMlResponseOmegacToOmegaPi<float, aod::hf_cand_casc_lf::ConstructMethod::KfParticle> hfMlResponseKf;
   std::vector<float> outputMlOmegac = {};
   o2::ccdb::CcdbApi ccdbApi;
 
@@ -391,19 +393,27 @@ struct HfCandidateSelectorToOmegaPiQa {
     // HfMlResponse initialization
     if (applyMl) {
       if (doprocessOmegac0SelectorWithKFParticle) {
-        registry.add("hBDTScoreTest1", "hBDTScoreTest1", {HistType::kTH1D, {{100, 0.0f, 1.0f, "score"}}});
-        hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        registry.add("hBDTScoreKF", "hBDTScoreKF", {HistType::kTH1D, {{100, 0.0f, 1.0f, "score"}}});
+        hfMlResponseKf.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
         if (loadModelsFromCCDB) {
           ccdbApi.init(ccdbUrl);
-          hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+          hfMlResponseKf.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
         } else {
-          hfMlResponse.setModelPathsLocal(onnxFileNames);
+          hfMlResponseKf.setModelPathsLocal(onnxFileNames);
         }
-        hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
-        hfMlResponse.init();
-      } else { 
-        // DCAFitter: ML is not yet implemented
-        LOGP(warning, "ML selection is currently only supported for KFParticle.");
+        hfMlResponseKf.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseKf.init();
+      } else if (doprocessOmegac0SelectorWithDCAFitter) {
+        registry.add("hBDTScoreDCA", "hBDTScoreDCA", {HistType::kTH1D, {{100, 0.0f, 1.0f, "score"}}});
+        hfMlResponseDca.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        if (loadModelsFromCCDB) {
+          ccdbApi.init(ccdbUrl);
+          hfMlResponseDca.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        } else {
+          hfMlResponseDca.setModelPathsLocal(onnxFileNames);
+        }
+        hfMlResponseDca.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseDca.init();
       }
     }
   }
@@ -1122,19 +1132,30 @@ struct HfCandidateSelectorToOmegaPiQa {
         statusInvMassCharmBaryon = true;
       }
 
-      // ML BDT selection  - curently only for KFParticle 
-      if constexpr (svReco == doKfParticle) {
-        if (applyMl) {
-          bool isSelectedMlOmegac = false;
-          std::vector<float> inputFeaturesOmegaC = hfMlResponse.getInputFeatures(candidate, trackPiFromLam, trackKaFromCasc, trackPiFromCharm);
-          isSelectedMlOmegac = hfMlResponse.isSelectedMl(inputFeaturesOmegaC, ptCandOmegac, outputMlOmegac);
+      // ML BDT selection
+      if (applyMl) {
+        bool isSelectedMlOmegac = false;
+        std::vector<float> inputFeaturesOmegaC = {};
+
+        if constexpr (svReco == doKfParticle) {
+          inputFeaturesOmegaC = hfMlResponseKf.getInputFeatures(candidate, trackPiFromLam, trackKaFromCasc, trackPiFromCharm);
+          isSelectedMlOmegac = hfMlResponseKf.isSelectedMl(inputFeaturesOmegaC, ptCandOmegac, outputMlOmegac);
           if (isSelectedMlOmegac) {
-            registry.fill(HIST("hBDTScoreTest1"), outputMlOmegac[0]);
+            registry.fill(HIST("hBDTScoreKF"), outputMlOmegac[0]);
           } else {
             resultSelections = false;
           }
-          hfMlSelToOmegaPi(outputMlOmegac);
+        } else if constexpr (svReco == doDcaFitter) {
+          inputFeaturesOmegaC = hfMlResponseDca.getInputFeatures(candidate, trackPiFromLam, trackKaFromCasc, trackPiFromCharm);
+          isSelectedMlOmegac = hfMlResponseDca.isSelectedMl(inputFeaturesOmegaC, ptCandOmegac, outputMlOmegac);
+          if (isSelectedMlOmegac) {
+            registry.fill(HIST("hBDTScoreDCA"), outputMlOmegac[0]);
+          } else {
+            resultSelections = false;
+          }
         }
+
+        hfMlSelToOmegaPi(outputMlOmegac);
       }
 
       // Fill in selection result

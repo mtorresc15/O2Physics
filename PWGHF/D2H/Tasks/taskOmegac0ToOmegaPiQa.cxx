@@ -51,28 +51,12 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-namespace o2::aod
-{
-namespace ml
-{
-DECLARE_SOA_COLUMN(InvMassCharmBaryon, invMassCharmBaryon, float);
-DECLARE_SOA_COLUMN(KfptOmegac, kfptOmegac, float);
-DECLARE_SOA_COLUMN(KfptPiFromOmegac, kfptPiFromOmegac, float);
-DECLARE_SOA_COLUMN(MlProbOmegac, mlProbOmegac, float);
-DECLARE_SOA_COLUMN(Cent, cent, float);
-} // namespace ml
-DECLARE_SOA_TABLE(HfKfOmegacML, "AOD", "HFKFOMEGACML",
-                  ml::InvMassCharmBaryon, ml::KfptOmegac, ml::KfptPiFromOmegac, ml::MlProbOmegac, ml::Cent);
-} // namespace o2::aod
-
 /// Omegac0 analysis task
 struct HfTaskOmegac0ToOmegaPiQa {
-  Produces<o2::aod::HfKfOmegacML> kfCandMl;
 
   Configurable<bool> selectionFlagOmegac0{"selectionFlagOmegac0", true, "Select Omegac0 candidates"};
   Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "Max. gen particle rapidity"};
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "Max. cand. rapidity"};
-  Configurable<bool> fillTree{"fillTree", false, "Fill tree for local analysis (enabled only with ML)"};
 
   SliceCache cache;
 
@@ -227,13 +211,8 @@ struct HfTaskOmegac0ToOmegaPiQa {
     if constexpr (UseCentrality) {
       float const cent = o2::hf_centrality::getCentralityColl(collision);
       if constexpr (ApplyMl) {
-        registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), yOmegac,
+        registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), yOmegac, 
                       cent, numPvContributors, candidate.mlProbOmegac()[0]);
-        if constexpr (UseKfParticle) {          
-          if (fillTree) {
-            kfCandMl(candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfptPiFromOmegac(), candidate.mlProbOmegac()[0], cent);
-          }
-        }
       } else {
         registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), yOmegac,
                       cent, numPvContributors);
