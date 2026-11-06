@@ -2171,6 +2171,20 @@ struct HfCandidateCreatorXic0Omegac0QaMc {
     runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcXicToXiPiWithKFParticleNoCent, "Perform MC matching of KFParticle reconstructed Xic0 to Xi Pi. No cents", false);
+
+  //~~~~~~~~~~~~~~~~~~~//
+  //~~~~To Omega Pi~~~~//
+  //~~~~~~~~~~~~~~~~~~~//
+  void processMcOmegacToOmegaPiWithKFParticleCentFT0M(aod::HfCandToOmegaPi const& candidates,
+                                                      TracksWMcIU const& tracks,
+                                                      aod::McParticles const& mcParticles,
+                                                      McCollisionsCentFT0Ms const& mcCollisions,
+                                                      McCollisionsFT0Ms const& collsWithMcLabels,
+                                                      BCsInfo const& bcs)
+  {
+    runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QaMc, processMcOmegacToOmegaPiWithKFParticleCentFT0M, "Perform MC matching of KFParticle reconstructed Omegac0 to Omega Pi. Cents with FT0M", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
